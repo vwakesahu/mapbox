@@ -24,26 +24,25 @@ export default function ReactMaps() {
 
   return (
     <div>
-      {currentPosition.latitude != null && currentPosition.longitude != null && (
-        <Map
-          initialViewState={{
-            latitude: currentPosition.latitude,
-            longitude: currentPosition.longitude,
-            zoom: 14,
-          }}
-          style={{ width: "100vw", height: "100vh" }}
-          mapStyle="mapbox://styles/mapbox/streets-v9"
-          mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
-        >
-          
-
-          <Marker
-            longitude={currentPosition.longitude}
-            latitude={currentPosition.latitude}
-            color="red"
-          />
-        </Map>
-      )}
+      {currentPosition.latitude != null &&
+        currentPosition.longitude != null && (
+          <Map
+            initialViewState={{
+              latitude: currentPosition.latitude,
+              longitude: currentPosition.longitude,
+              zoom: 14,
+            }}
+            style={{ width: "100vw", height: "100vh" }}
+            mapStyle="mapbox://styles/mapbox/streets-v9"
+            mapboxAccessToken={process.env.NEXT_PUBLIC_MAPBOX_TOKEN}
+          >
+            <Marker
+              longitude={currentPosition.longitude}
+              latitude={currentPosition.latitude}
+              color="red"
+            />
+          </Map>
+        )}
     </div>
   );
 }
