@@ -1,4 +1,5 @@
 import { routeData } from "@/data/response";
+import { res2 } from "@/data/res2";
 import React, { useState, useEffect } from "react";
 import ReactMapGL, {
   Marker,
@@ -25,6 +26,26 @@ const MapComponent = () => {
     setViewportDebounced(newViewport);
   };
 
+  const [busPositionIndex, setBusPositionIndex] = useState(0);
+
+  const simulateBusMovement = () => {
+    setBusPositionIndex(
+      (prevIndex) => (prevIndex + 1) % routeData.waypoints.length
+    );
+
+    setTimeout(simulateBusMovement, 2000);
+  };
+
+  useEffect(() => {
+    // Start the simulation when the component mounts
+    simulateBusMovement();
+
+    // Clean up the simulation when the component unmounts
+    return () => {
+      clearTimeout();
+    };
+  }, []);
+
   return (
     <ReactMapGL
       {...viewport}
@@ -33,19 +54,18 @@ const MapComponent = () => {
       onMove={(newViewport) => handleMove(newViewport)}
       style={{ width: "100vw", height: "100vh" }}
     >
-      {/* Display the route */}
+      {/* Marker for bus location */}
       <Marker
-        longitude={73.164539}
-        latitude={19.221542}
+        longitude={routeData.waypoints[busPositionIndex].location[0]}
+        latitude={routeData.waypoints[busPositionIndex].location[1]}
         offsetTop={-10}
         offsetLeft={-10}
       >
-        {/* You can customize the marker, e.g., with an SVG marker */}
         <div style={{ fontSize: "24px", color: "red" }}>🚗</div>
       </Marker>
       {routeData.waypoints.map(
         (waypoint, index) =>
-          // Check if the waypoint is not the starting point
+          // for ignoring the starting point
           index > 0 && (
             <Marker
               key={index}
@@ -57,8 +77,8 @@ const MapComponent = () => {
           )
       )}
 
-      {/* Draw the route line */}
-      {routeData.routes.map((route, index) => (
+      {/* Drwaing the navigation Line */}
+      {/* {routeData.routes.map((route, index) => (
         <Source
           key={`route-${index}`}
           id={`route-${index}`}
@@ -83,9 +103,91 @@ const MapComponent = () => {
             }}
           />
         </Source>
+      ))} */}
+
+      {/* Drawing the navigation Line for the full path */}
+      {routeData.routes.map((route, index) => (
+        <Source
+          key={`full-route-${index}`}
+          id={`full-route-${index}`}
+          type="geojson"
+          data={{
+            type: "Feature",
+            properties: {},
+            geometry: route.geometry,
+          }}
+        >
+          <Layer
+            id={`full-route-${index}`}
+            type="line"
+            source={`full-route-${index}`}
+            layout={{
+              "line-join": "round",
+              "line-cap": "round",
+            }}
+            paint={{
+              "line-color": "blue",
+              "line-width": 8,
+            }}
+          />
+        </Source>
       ))}
 
-      {/* Add navigation controls */}
+      {/* Drawing the navigation Line for the traveled path */}
+      {res2.routes.map((route, index) => (
+        <Source
+          key={`traveled-route-${index}`}
+          id={`traveled-route-${index}`}
+          type="geojson"
+          data={{
+            type: "Feature",
+            properties: {},
+            geometry: route.geometry,
+          }}
+        >
+          <Layer
+            id={`traveled-route-${index}`}
+            type="line"
+            source={`traveled-route-${index}`}
+            layout={{
+              "line-join": "round",
+              "line-cap": "round",
+            }}
+            paint={{
+              "line-color": "gray", // Choose a color for the traveled path
+              "line-width": 8, // Adjust line width if needed
+            }}
+          />
+        </Source>
+      ))}
+
+      {/* {res2.routes.map((route, index) => (
+        <Source
+          key={`route-${index}`}
+          id={`route-${index}`}
+          type="geojson"
+          data={{
+            type: "Feature",
+            properties: {},
+            geometry: route.geometry,
+          }}
+        >
+          <Layer
+            id={`route-${index}`}
+            type="line"
+            source={`route-${index}`}
+            layout={{
+              "line-join": "round",
+              "line-cap": "round",
+            }}
+            paint={{
+              "line-color": "#888",
+              "line-width": 8,
+            }}
+          />
+        </Source>
+      ))} */}
+
       <div
         style={{
           position: "absolute",
