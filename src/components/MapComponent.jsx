@@ -1,5 +1,4 @@
 import { routeData } from "@/data/response";
-import { res2 } from "@/data/res2";
 import React, { useState, useEffect } from "react";
 import ReactMapGL, {
   Marker,
@@ -8,9 +7,9 @@ import ReactMapGL, {
   Layer,
 } from "react-map-gl";
 import _debounce from "lodash/debounce";
-import { LocateIcon } from "lucide-react";
-
+// import { res2 } from "@/data/res2";
 const MapComponent = () => {
+  const coords = routeData.routes[0].geometry.coordinates;
   const [viewport, setViewport] = useState({
     width: "100%",
     height: 400,
@@ -18,29 +17,63 @@ const MapComponent = () => {
     longitude: 73.164539,
     zoom: 13,
   });
+
+  const [path2, setPath2] = useState({
+    routes: [
+      {
+        geometry: {
+          coordinates: [],
+        },
+      },
+    ],
+  });
+
+  const pushElementsIntoArray = (array, index) => {
+    let arr = [];
+    for (let i = 0; i < index; i++) {
+      arr = [...arr, array[i]];
+    }
+    return arr;
+  };
+
+  const pathTravelled = (key, array) => {
+    for (let index = 0; index < array.length; index++) {
+      if (array[index][0] === key[0] && array[index][1] === key[1]) {
+        return pushElementsIntoArray(coords, index);
+      }
+    }
+    return -1;
+  };
+
+  const [busPositionIndex, setBusPositionIndex] = useState(0);
+
   const setViewportDebounced = _debounce((newViewport) => {
     setViewport(newViewport);
-  }, 200); //for avoiding setSTate error
+  }, 200);
 
   const handleMove = (newViewport) => {
     setViewportDebounced(newViewport);
   };
 
-  const [busPositionIndex, setBusPositionIndex] = useState(0);
+  useEffect(() => {
+    const key = routeData.waypoints[busPositionIndex].location;
+
+    setPath2({
+      routes: [{ geometry: { coordinates: [...pathTravelled(key, coords)] } }],
+    });
+  }, [busPositionIndex]);
 
   const simulateBusMovement = () => {
     setBusPositionIndex(
       (prevIndex) => (prevIndex + 1) % routeData.waypoints.length
     );
 
-    setTimeout(simulateBusMovement, 2000);
+    setTimeout(simulateBusMovement, 500);
   };
 
   useEffect(() => {
-    // Start the simulation when the component mounts
     simulateBusMovement();
 
-    // Clean up the simulation when the component unmounts
     return () => {
       clearTimeout();
     };
@@ -63,47 +96,6 @@ const MapComponent = () => {
       >
         <div style={{ fontSize: "24px", color: "red" }}>🚗</div>
       </Marker>
-      {routeData.waypoints.map(
-        (waypoint, index) =>
-          // for ignoring the starting point
-          index > 0 && (
-            <Marker
-              key={index}
-              longitude={waypoint.location[0]}
-              latitude={waypoint.location[1]}
-            >
-              <LocateIcon />
-            </Marker>
-          )
-      )}
-
-      {/* Drwaing the navigation Line */}
-      {/* {routeData.routes.map((route, index) => (
-        <Source
-          key={`route-${index}`}
-          id={`route-${index}`}
-          type="geojson"
-          data={{
-            type: "Feature",
-            properties: {},
-            geometry: route.geometry,
-          }}
-        >
-          <Layer
-            id={`route-${index}`}
-            type="line"
-            source={`route-${index}`}
-            layout={{
-              "line-join": "round",
-              "line-cap": "round",
-            }}
-            paint={{
-              "line-color": "#888",
-              "line-width": 8,
-            }}
-          />
-        </Source>
-      ))} */}
 
       {/* Drawing the navigation Line for the full path */}
       {routeData.routes.map((route, index) => (
@@ -134,68 +126,38 @@ const MapComponent = () => {
       ))}
 
       {/* Drawing the navigation Line for the traveled path */}
-      {res2.routes.map((route, index) => (
-        <Source
-          key={`traveled-route-${index}`}
-          id={`traveled-route-${index}`}
-          type="geojson"
-          data={{
-            type: "Feature",
-            properties: {},
-            geometry: route.geometry,
-          }}
-        >
-          <Layer
-            id={`traveled-route-${index}`}
-            type="line"
-            source={`traveled-route-${index}`}
-            layout={{
-              "line-join": "round",
-              "line-cap": "round",
-            }}
-            paint={{
-              "line-color": "gray", // Choose a color for the traveled path
-              "line-width": 8, // Adjust line width if needed
-            }}
-          />
-        </Source>
-      ))}
-
-      {/* {res2.routes.map((route, index) => (
-        <Source
-          key={`route-${index}`}
-          id={`route-${index}`}
-          type="geojson"
-          data={{
-            type: "Feature",
-            properties: {},
-            geometry: route.geometry,
-          }}
-        >
-          <Layer
-            id={`route-${index}`}
-            type="line"
-            source={`route-${index}`}
-            layout={{
-              "line-join": "round",
-              "line-cap": "round",
-            }}
-            paint={{
-              "line-color": "#888",
-              "line-width": 8,
-            }}
-          />
-        </Source>
-      ))} */}
-
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          padding: "10px",
+      <Source
+        key="traveled-route"
+        id="traveled-route"
+        type="geojson"
+        data={{
+          type: "Feature",
+          properties: {},
+          geometry: {
+            type: "LineString",
+            coordinates:
+              path2.routes.length > 0
+                ? path2.routes[0].geometry.coordinates
+                : [],
+          },
         }}
       >
+        <Layer
+          id="traveled-route"
+          type="line"
+          source="traveled-route"
+          layout={{
+            "line-join": "round",
+            "line-cap": "round",
+          }}
+          paint={{
+            "line-color": "gray",
+            "line-width": 8,
+          }}
+        />
+      </Source>
+
+      <div style={{ position: "absolute", top: 0, left: 0, padding: "10px" }}>
         <NavigationControl showCompass={true} />
       </div>
     </ReactMapGL>
